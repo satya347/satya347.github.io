@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StackSpace — Automate E-Commerce ESG &amp; Packaging Compliance</title>
+  <script src="script.js"></script>
+  <meta name="description" content="StackSpace instantly scans global online stores, cross-border shipping routes, and packaging materials for automated ESG, CSRD, and digital product passport compliance." />
+  <style>
+    :root {
+      --bg: #0A0C0B;
+      --bg-elev: #121614;
+      --emerald: #C8B48A;
+      --emerald-deep: #3F6F55;
+      --emerald-dark: #2A4A38;
+      --white: #F3EFE6;
+      --muted: rgba(243, 239, 230, 0.68);
+      --faint: rgba(243, 239, 230, 0.42);
+      --line: rgba(200, 180, 138, 0.18);
+      --line-strong: rgba(200, 180, 138, 0.32);
+      --glass: rgba(10, 12, 11, 0.68);
+      --glass-fill: rgba(255, 255, 255, 0.045);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.18), 0 12px 32px rgba(0, 0, 0, 0.22);
+      --radius: 8px;
+      --radius-lg: 12px;
+      --max: 1120px;
+      --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 70;
+      opacity: 0.07;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+    }
+    .btn-primary { color: #1A140C; }
+    .live { color: #1A140C; }
+    select {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line-strong);
+      background: rgba(0,0,0,0.25);
+      color: var(--white);
+    }
+    .tools {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .tools label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-weight: 500;
+      min-height: 44px;
+    }
+    .error {
+      display: none;
+      color: #E7C4B8;
+      font-size: 13px;
+      margin: 0 0 10px;
+    }
+    .error.show { display: block; }
+    .result-list { margin: 8px 0 16px; padding-left: 18px; color: var(--muted); }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--white);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; display: block; }
+    a { color: inherit; }
+    button, input, select { font-family: inherit; }
+
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        linear-gradient(rgba(200,180,138,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(200,180,138,0.08) 1px, transparent 1px);
+      background-size: 64px 64px;
+      mask-image: radial-gradient(ellipse at 50% 0%, #000 18%, transparent 72%);
+    }
+
+    .wrap {
+      width: min(var(--max), calc(100% - 48px));
+      margin: 0 auto;
+    }
+    @media (max-width: 640px) {
+      .wrap { width: min(var(--max), calc(100% - 32px)); }
+    }
+
+    .skip {
+      position: absolute;
+      left: -999px;
+      top: 8px;
+    }
+    .skip:focus {
+      left: 16px;
+      z-index: 80;
+      background: var(--emerald);
+      color: #1A140C;
+      padding: 8px 12px;
+      border-radius: var(--radius);
+    }
+
+    /* NAV */
+    header.nav {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      backdrop-filter: blur(16px);
+      background: rgba(10, 12, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 64px;
+      gap: 16px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      flex: 0 0 32px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 14px;
+      padding: 12px 12px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
+    .nav-links a:hover { color: var(--white); }
+    .menu-toggle {
+      display: none;
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--white);
+      border-radius: var(--radius);
+      cursor: pointer;
+    }
+    @media (max-width: 860px) {
+      .menu-toggle { display: inline-flex; align-items: center; justify-content: center; }
+      .nav-links {
+        display: none;
+        position: absolute;
+        left: 0; right: 0; top: 64px;
+        flex-direction: column;
+        align-items: stretch;
+        padding: 12px 16px 20px;
+        background: rgba(10, 12, 11, 0.96);
+        border-bottom: 1px solid var(--line);
+      }
+      header.nav.open .nav-links { display: flex; }
+      .nav-links a, .nav-links .btn { width: 100%; justify-content: center; }
+    }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 10px 18px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 650;
+      cursor: pointer;
+      letter-spacing: -0.01em;
+    }
+    .btn-primary {
+      background: var(--emerald);
+      color: #1A140C;
+    }
+    .btn-primary:hover { filter: brightness(1.06); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--white);
+      border-color: var(--line-strong);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.05); }
+    .btn-dark {
+      background: #1A140C;
+      color: var(--white);
+      border-color: rgba(255,255,255,0.12);
+    }
+    .btn-lg { min-height: 48px; padding: 12px 22px; font-size: 15px; }
+    .btn:focus-visible, a:focus-visible, input:focus-visible, button:focus-visible {
+      outline: 2px solid var(--emerald);
+      outline-offset: 2px;
+    }
+
+    /* HERO */
+    .hero {
+      position: relative;
+      z-index: 1;
+      padding: 48px 0 64px;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(15,23,42,0.35) 0%, rgba(15,23,42,0.88) 72%, var(--bg) 100%),
+        url("data:image/webp;base64,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") center / cover no-repeat;
+      opacity: 0.9;
+      z-index: -1;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 48px;
+      align-items: center;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--emerald);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 0 4px rgba(200,180,138,0.18);
+    }
+    h1 {
+      margin: 0 0 16px;
+      font-size: clamp(32px, 4.4vw, 48px);
+      line-height: 1.12;
+      letter-spacing: -0.035em;
+      font-weight: 750;
+    }
+    .lede {
+      margin: 0 0 32px;
+      color: var(--muted);
+      max-width: 58ch;
+      font-size: 17px;
+    }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .mock-url {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .hero-note {
+      margin-top: 16px;
+      font-size: 14px;
+      color: var(--faint);
+    }
+
+    /* MOCK UI */
+    .mock {
+      background: var(--glass);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      overflow: hidden;
+    }
+    .mock-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+    }
+    .traffic { display: flex; gap: 6px; }
+    .traffic span {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,0.22);
+    }
+    .mock-url {
+      flex: 1;
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 6px 10px;
+    }
+    .mock-body { padding: 16px; }
+    .scan-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .scan-head h2 {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: -0.02em;
+    }
+    .scan-head p { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+    .live {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1A140C;
+      background: var(--emerald);
+      padding: 4px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .progress {
+      height: 6px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .progress > i {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #3F6F55, var(--emerald));
+      animation: fill 1.6s ease forwards;
+    }
+    .regions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .region {
+      border: 1px solid var(--line);
+      background: var(--glass-fill);
+      border-radius: var(--radius);
+      padding: 12px 10px;
+      min-height: 92px;
+    }
+    .region .code {
+      font-size: 12px;
+      color: var(--faint);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .region strong { display: block; margin: 4px 0 8px; font-size: 14px; }
+    .check {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 650;
+      color: var(--emerald);
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    .check.show { opacity: 1; transform: none; transition: opacity .35s ease, transform .35s ease; }
+    .tick {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: rgba(200,180,138,0.16);
+      border: 1px solid rgba(200,180,138,0.5);
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+    }
+    .metric span { display: block; font-size: 12px; color: var(--faint); }
+    .metric b { font-size: 16px; letter-spacing: -0.03em; }
+
+    /* TRUST */
+    .trust {
+      position: relative;
+      z-index: 1;
+      padding: 8px 0 48px;
+    }
+    .trust p {
+      margin: 0 0 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .logo-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .logo-slot {
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius);
+      color: rgba(255,255,255,0.55);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(255,255,255,0.02);
+    }
+    .logo-slot svg { height: 18px; width: auto; fill: currentColor; opacity: 0.85; }
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 36px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 650;
+      color: var(--muted);
+    }
+    .badge i {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); display: block;
+    }
+
+    /* SECTIONS */
+    section { position: relative; z-index: 1; padding: 64px 0; }
+    .sec-kicker {
+      color: var(--emerald);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin: 0 0 8px;
+    }
+    h2.sec-title {
+      margin: 0 0 12px;
+      font-size: clamp(26px, 3vw, 34px);
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+    }
+    .sec-sub { margin: 0 0 32px; color: var(--muted); max-width: 62ch; }
+    .center { text-align: center; }
+    .center .sec-sub { margin-left: auto; margin-right: auto; }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .card {
+      background: var(--glass-fill);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      backdrop-filter: blur(12px);
+    }
+    .icon {
+      width: 40px; height: 40px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(200,180,138,0.35);
+      background: rgba(200,180,138,0.1);
+      display: grid; place-items: center;
+      margin-bottom: 16px;
+      color: var(--emerald);
+    }
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+    .card p { margin: 0; color: var(--muted); font-size: 15px; }
+
+    /* CALCULATOR */
+    .calc-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    .slider-block { margin-bottom: 24px; }
+    .slider-block:last-of-type { margin-bottom: 0; }
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      font-weight: 650;
+    }
+    .slider-label output { color: var(--emerald); font-variant-numeric: tabular-nums; }
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--emerald) var(--pct, 20%), rgba(255,255,255,0.12) var(--pct, 20%));
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--white);
+      border: 2px solid var(--emerald);
+      cursor: pointer;
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--white);
+      border: 2px solid var(--emerald);
+      cursor: pointer;
+    }
+    .output {
+      background: linear-gradient(180deg, rgba(200,180,138,0.12), rgba(255,255,255,0.03));
+      border: 1px solid rgba(200,180,138,0.35);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 20px;
+    }
+    .stat span {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .stat strong {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      font-size: 32px;
+      letter-spacing: -0.04em;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .stat strong span,
+    .stat em {
+      font-style: normal;
+      color: var(--faint);
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    /* TABLE */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--glass-fill);
+    }
+    .compare-stack { display: none; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 640px;
+    }
+    th, td {
+      text-align: left;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th {
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    td:first-child { color: var(--muted); font-weight: 650; width: 22%; }
+    tr:last-child td { border-bottom: 0; }
+    .col-ai {
+      background: rgba(200,180,138,0.08);
+      color: var(--white);
+    }
+    th.col-ai { color: var(--emerald); }
+
+    /* PRICING */
+    .pricing {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .plan {
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+    }
+    .plan.featured {
+      border-color: rgba(200,180,138,0.55);
+      background: linear-gradient(180deg, rgba(200,180,138,0.14), rgba(255,255,255,0.03));
+      transform: translateY(-6px);
+    }
+    .popular {
+      display: inline-block;
+      align-self: flex-start;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #1A140C;
+      background: var(--emerald);
+      padding: 4px 8px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+    }
+    .plan h3 { margin: 0 0 8px; font-size: 20px; }
+    .price {
+      margin: 0 0 16px;
+      font-size: 36px;
+      letter-spacing: -0.04em;
+      font-weight: 750;
+    }
+    .price span { font-size: 15px; color: var(--muted); font-weight: 500; }
+    .plan ul {
+      margin: 0 0 24px;
+      padding: 0;
+      list-style: none;
+      flex: 1;
+    }
+    .plan li {
+      position: relative;
+      padding: 8px 0 8px 22px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .plan li::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 14px;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--emerald);
+    }
+
+    /* CTA BANNER */
+    .cta-banner {
+      padding: 0 0 64px;
+    }
+    .cta-panel {
+      background: linear-gradient(135deg, #24382E 0%, #3F6F55 52%, #1E2F26 100%);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius-lg);
+      padding: 48px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .cta-panel h2 {
+      margin: 0 0 8px;
+      font-size: clamp(24px, 3vw, 32px);
+      letter-spacing: -0.03em;
+    }
+    .cta-panel p { margin: 0; color: rgba(255,255,255,0.82); max-width: 48ch; }
+
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--line);
+      padding: 32px 0 48px;
+    }
+    .foot {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .pulse {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 0 0 rgba(200,180,138,0.6);
+      animation: pulse 2s infinite;
+    }
+    .foot-links { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+    .foot-links a {
+      color: var(--muted);
+      font-size: 14px;
+      text-decoration: none;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
+    .foot-links a:hover { color: var(--white); }
+
+    /* MODAL */
+    dialog {
+      width: min(460px, calc(100% - 32px));
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-lg);
+      background: #141816;
+      color: var(--white);
+      padding: 0;
+      box-shadow: var(--shadow);
+    }
+    dialog::backdrop { background: rgba(6, 8, 7, 0.78); }
+    .modal { padding: 24px; }
+    .modal h2 { margin: 0 0 8px; font-size: 22px; }
+    .modal p { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
+    label { display: block; font-size: 13px; font-weight: 650; margin: 0 0 6px; }
+    .field { margin-bottom: 14px; }
+    input[type=email], input[type=url], input[type=text] {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line-strong);
+      background: rgba(0,0,0,0.25);
+      color: var(--white);
+    }
+    .modal-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .thanks { display: none; }
+    .thanks.show { display: block; }
+    form.hide { display: none; }
+
+    @keyframes fill { to { width: 100%; } }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(200,180,138,0.55); }
+      70% { box-shadow: 0 0 0 8px rgba(200,180,138,0); }
+      100% { box-shadow: 0 0 0 0 rgba(200,180,138,0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .progress > i { width: 100%; animation: none; }
+      .check { opacity: 1; transform: none; }
+      .pulse { animation: none; }
+      .plan.featured { transform: none; }
+    }
+
+    @media (max-width: 960px) {
+      .hero-grid, .calc-grid, .pricing { grid-template-columns: 1fr; }
+      .plan.featured { transform: none; }
+      .cta-panel { flex-direction: column; align-items: flex-start; padding: 32px 24px; }
+      .logo-row { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .hero { padding: 32px 0 48px; }
+      section { padding: 48px 0; }
+      .features { grid-template-columns: 1fr; }
+      .regions, .metrics { grid-template-columns: 1fr; }
+      .logo-row { grid-template-columns: 1fr 1fr; }
+      h1 { font-size: 32px; }
+      .cta-row .btn { width: 100%; }
+      .table-wrap { display: none; }
+      .compare-stack { display: grid; gap: 12px; }
+      .compare-item {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        padding: 16px;
+        background: var(--glass-fill);
+      }
+      .compare-item h3 {
+        margin: 0 0 12px;
+        font-size: 14px;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .compare-pair {
+        display: grid;
+        gap: 8px;
+      }
+      .compare-pair div {
+        padding: 10px 12px;
+        border-radius: var(--radius);
+        border: 1px solid var(--line);
+      }
+      .compare-pair .win {
+        border-color: rgba(200,180,138,0.45);
+        background: rgba(200,180,138,0.1);
+      }
+      .compare-pair span {
+        display: block;
+        font-size: 12px;
+        color: var(--faint);
+        margin-bottom: 2px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav" id="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#top" aria-label="StackSpace home">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="#C8B48A"/>
+          <path d="M16 6.5c-5.4 4.4-7.5 8.4-7.5 12.2A7.5 7.5 0 0 0 16 26a7.5 7.5 0 0 0 7.5-7.3c0-3.8-2.1-7.8-7.5-12.2z" fill="#1A140C"/>
+          <path d="M16 12.5v9" stroke="#C8B48A" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+        StackSpace
+      </a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav-links" id="menuBtn">Menu</button>
+      <nav class="nav-links" id="nav-links">
+        <a href="#features">Features</a>
+        <a href="#calculator">Risk calculator</a>
+        <a href="#compare">Compare</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#api">API docs</a>
+        <a href="login.html">Account</a>
+        <button class="btn btn-primary" type="button" data-open="audit">Run free audit</button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero-bg" aria-hidden="true"></div>
+      <div class="grid-overlay" aria-hidden="true"></div>
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow"><span class="dot" aria-hidden="true"></span> Built for global e-commerce</div>
+          <h1>Automate E-Commerce ESG &amp; Packaging Compliance Before Fines Hit.</h1>
+          <p class="lede">StackSpace instantly scans your global online store, cross-border shipping routes, and packaging materials to ensure automated compliance with international environmental laws, CSRD regulations, and digital product passport rules.</p>
+          <div class="cta-row">
+            <button class="btn btn-primary btn-lg" type="button" data-open="audit">Run Free Store Compliance Audit</button>
+            <button class="btn btn-ghost btn-lg" type="button" data-open="demo">Book a 15-Min Demo</button>
+          </div>
+          <p class="hero-note">No credit card. Connect Shopify, WooCommerce, or Amazon in under 5 minutes.</p>
+        </div>
+
+        <aside class="mock" aria-label="Live store compliance scan mock-up">
+          <div class="mock-bar">
+            <div class="traffic" aria-hidden="true"><span></span><span></span><span></span></div>
+            <div class="mock-url">scan.stackspace.ai / northline-store.shop</div>
+          </div>
+          <div class="mock-body">
+            <div class="scan-head">
+              <div>
+                <h2>Live store scan</h2>
+                <p>12,480 SKUs · 18 shipping lanes · packaging materials mapped</p>
+              </div>
+              <span class="live">LIVE</span>
+            </div>
+            <div class="progress" aria-hidden="true"><i></i></div>
+            <div class="regions">
+              <div class="region">
+                <span class="code">Region</span>
+                <strong>European Union</strong>
+                <div class="check" data-delay="180"><span class="tick" aria-hidden="true">
+                  <svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5.2 4.1 7.4 8 2.8" fill="none" stroke="#C8B48A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span> CSRD + DPP pass</div>
+              </div>
+              <div class="region">
+                <span class="code">Region</span>
+                <strong>United States</strong>
+                <div class="check" data-delay="420"><span class="tick" aria-hidden="true">
+                  <svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5.2 4.1 7.4 8 2.8" fill="none" stroke="#C8B48A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span> State EPR clear</div>
+              </div>
+              <div class="region">
+                <span class="code">Region</span>
+                <strong>United Kingdom</strong>
+                <div class="check" data-delay="680"><span class="tick" aria-hidden="true">
+                  <svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5.2 4.1 7.4 8 2.8" fill="none" stroke="#C8B48A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span> Plastic tax pass</div>
+              </div>
+            </div>
+            <div class="metrics">
+              <div class="metric"><span>Packaging score</span><b>98 / 100</b></div>
+              <div class="metric"><span>Green claims</span><b>0 flags</b></div>
+              <div class="metric"><span>Benchmarks</span><b>EU · US · UK</b></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <div class="trust">
+      <div class="wrap">
+        <p>Trusted by top DTC brands, Shopify Plus sellers, and global logistics networks.</p>
+        <div class="logo-row" aria-label="Brand logo placeholders">
+          <div class="logo-slot">Brand 01</div>
+          <div class="logo-slot">Brand 02</div>
+          <div class="logo-slot">Brand 03</div>
+          <div class="logo-slot">Brand 04</div>
+          <div class="logo-slot">Brand 05</div>
+        </div>
+        <div class="badges">
+          <span class="badge"><i></i> GDPR</span>
+          <span class="badge"><i></i> CSRD Ready</span>
+          <span class="badge"><i></i> ISO 27001 Certified</span>
+        </div>
+      </div>
+    </div>
+
+    <section id="features">
+      <div class="wrap">
+        <p class="sec-kicker">Core platform</p>
+        <h2 class="sec-title">Compliance engines built for cross-border catalogs</h2>
+        <p class="sec-sub">Four tightly scoped modules that parse your store, price packaging risk, issue digital passports, and stop illegal green claims before they ship.</p>
+        <div class="features">
+          <article class="card">
+            <div class="icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 20h10M8 8h8M8 12h5"/></svg>
+            </div>
+            <h3>Automated Store &amp; Catalog Parser</h3>
+            <p>Integrates directly with Shopify, WooCommerce, and Amazon storefronts to cross-reference product materials against country-specific environmental import laws.</p>
+          </article>
+          <article class="card">
+            <div class="icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h13l5 5v5H3z"/><path d="M7 17v3M17 17v3M14 7V4H8v3"/></svg>
+            </div>
+            <h3>Cross-Border Packaging &amp; Plastic Tax Tracker</h3>
+            <p>Automatically calculates packaging tariffs, EPR (Extended Producer Responsibility) taxes, and plastic pollution levies based on shipping destination.</p>
+          </article>
+          <article class="card">
+            <div class="icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7"/><path d="M15 5h5M15 9h5M4 15h5M4 19h5M13 14h7v7h-7z"/></svg>
+            </div>
+            <h3>One-Click Digital Product Passport (DPP) Generator</h3>
+            <p>Instantly creates compliant digital product passports and QR codes for fashion, electronics, and consumer goods required by global trade authorities.</p>
+          </article>
+          <article class="card">
+            <div class="icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M9 11h4M11 9v4"/></svg>
+            </div>
+            <h3>Zero-Greenwashing Verifier</h3>
+            <p>AI scans product copy and marketing claims to catch illegal or misleading environmental claims before legal warnings occur.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="calculator">
+      <div class="wrap">
+        <p class="sec-kicker">Exposure model</p>
+        <h2 class="sec-title">Estimate Your Compliance &amp; Fine Exposure Risk</h2>
+        <p class="sec-sub">Move the sliders to model legal spend and fine exposure across your monthly order volume and shipping footprint.</p>
+        <div class="calc-grid">
+          <div class="card">
+            <div class="slider-block">
+              <div class="slider-label">
+                <label for="orders">Monthly Global Orders</label>
+                <output id="ordersOut" for="orders">5,000</output>
+              </div>
+              <input id="orders" type="range" min="100" max="50000" step="100" value="5000" aria-valuemin="100" aria-valuemax="50000" />
+            </div>
+            <div class="slider-block">
+              <div class="slider-label">
+                <label for="countries">Number of International Shipping Countries</label>
+                <output id="countriesOut" for="countries">8</output>
+              </div>
+              <input id="countries" type="range" min="1" max="50" step="1" value="8" />
+            </div>
+          </div>
+          <div class="card output" aria-live="polite">
+            <div class="stat">
+              <span>Estimated Manual Legal Costs Saved</span>
+              <strong id="legalOut">$15,000<span>/yr</span></strong>
+            </div>
+            <div class="stat">
+              <span>Fines Avoided</span>
+              <strong id="fineOut">$50,000<em>+</em></strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="compare">
+      <div class="wrap">
+        <p class="sec-kicker">Switching economics</p>
+        <h2 class="sec-title">Why Top E-Commerce Brands Switch to StackSpace</h2>
+        <p class="sec-sub">Replace slow, market-by-market legal retainers with a continuously updated compliance engine.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Features</th>
+                <th>Traditional Legal Agencies</th>
+                <th class="col-ai">StackSpace</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Setup Time</td>
+                <td>4-6 Weeks</td>
+                <td class="col-ai">5 Minutes</td>
+              </tr>
+              <tr>
+                <td>Cost Per Region</td>
+                <td>$10,000+ per market</td>
+                <td class="col-ai">Included in Subscription</td>
+              </tr>
+              <tr>
+                <td>Regulatory Updates</td>
+                <td>Manual quarterly reviews</td>
+                <td class="col-ai">Real-time automated policy tracking</td>
+              </tr>
+              <tr>
+                <td>Error Rate</td>
+                <td>Human error prone</td>
+                <td class="col-ai">Zero-hallucination verification</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="compare-stack" aria-label="Mobile comparison">
+          <article class="compare-item">
+            <h3>Setup Time</h3>
+            <div class="compare-pair">
+              <div><span>Traditional Legal Agencies</span><b>4-6 Weeks</b></div>
+              <div class="win"><span>StackSpace</span><b>5 Minutes</b></div>
+            </div>
+          </article>
+          <article class="compare-item">
+            <h3>Cost Per Region</h3>
+            <div class="compare-pair">
+              <div><span>Traditional Legal Agencies</span><b>$10,000+ per market</b></div>
+              <div class="win"><span>StackSpace</span><b>Included in Subscription</b></div>
+            </div>
+          </article>
+          <article class="compare-item">
+            <h3>Regulatory Updates</h3>
+            <div class="compare-pair">
+              <div><span>Traditional Legal Agencies</span><b>Manual quarterly reviews</b></div>
+              <div class="win"><span>StackSpace</span><b>Real-time automated policy tracking</b></div>
+            </div>
+          </article>
+          <article class="compare-item">
+            <h3>Error Rate</h3>
+            <div class="compare-pair">
+              <div><span>Traditional Legal Agencies</span><b>Human error prone</b></div>
+              <div class="win"><span>StackSpace</span><b>Zero-hallucination verification</b></div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="pricing">
+      <div class="wrap">
+        <p class="sec-kicker center" style="text-align:center">Plans</p>
+        <h2 class="sec-title" style="text-align:center">Scale coverage with your order volume</h2>
+        <p class="sec-sub" style="text-align:center;margin-left:auto;margin-right:auto">Start with core packaging rules, then unlock unlimited country tracking and live API controls.</p>
+        <div class="pricing">
+          <article class="card plan">
+            <h3>Store Starter</h3>
+            <p class="price">$149<span>/mo</span></p>
+            <ul>
+              <li>Up to 1,000 orders/mo</li>
+              <li>3 shipping countries</li>
+              <li>Basic packaging compliance</li>
+            </ul>
+            <button class="btn btn-ghost" type="button" data-open="audit">Start free audit</button>
+          </article>
+          <article class="card plan featured">
+            <span class="popular">Most Popular</span>
+            <h3>Global Merchant</h3>
+            <p class="price">$499<span>/mo</span></p>
+            <ul>
+              <li>Up to 20,000 orders/mo</li>
+              <li>Unlimited country tracking</li>
+              <li>Digital Product Passport generator</li>
+              <li>Live API integration</li>
+            </ul>
+            <button class="btn btn-primary" type="button" data-open="audit">Start free audit</button>
+          </article>
+          <article class="card plan">
+            <h3>Enterprise Brand</h3>
+            <p class="price">Custom<span></span></p>
+            <ul>
+              <li>Unlimited orders</li>
+              <li>Custom ERP integration</li>
+              <li>Dedicated compliance officer support</li>
+            </ul>
+            <button class="btn btn-ghost" type="button" data-open="demo">Talk to sales</button>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <div class="cta-banner">
+      <div class="wrap">
+        <div class="cta-panel">
+          <div>
+            <h2>Protect Your Global E-Commerce Store Today.</h2>
+            <p>Run a free audit against EU, US, and UK environmental trade rules before the next shipment leaves the warehouse.</p>
+          </div>
+          <button class="btn btn-dark btn-lg" type="button" data-open="audit">Run Free Store Compliance Audit</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+      <div class="status"><span class="pulse" aria-hidden="true"></span> All Regulatory Engines Active</div>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="#privacy">Privacy Policy</a>
+        <a href="#terms">Terms of Service</a>
+        <a href="#api" id="api">API documentation</a>
+      </nav>
+    </div>
+  </footer>
+
+  <dialog id="modal" aria-labelledby="modalTitle">
+    <div class="modal">
+      <h2 id="modalTitle">Run a free store audit</h2>
+      <p id="modalCopy">We’ll map packaging, shipping lanes, and ESG claims against EU, US, and UK rules.</p>
+      <form id="leadForm">
+        <div class="field">
+          <label for="company">Company</label>
+          <input id="company" name="company" type="text" required placeholder="Northline Goods" />
+        </div>
+        <div class="field">
+          <label for="email">Work email</label>
+          <input id="email" name="email" type="email" required placeholder="you@brand.com" />
+        </div>
+        <div class="field">
+          <label for="team_size">Team size</label>
+          <select id="team_size" name="team_size" required>
+            <option value="1-10">1-10</option>
+            <option value="11-50" selected>11-50</option>
+            <option value="51-200">51-200</option>
+            <option value="200+">200+</option>
+          </select>
+        </div>
+        <div class="field" id="toolsField">
+          <span id="toolsLabel">Commerce stack</span>
+          <div class="tools" role="group" aria-labelledby="toolsLabel">
+            <label><input type="checkbox" name="tools" value="Shopify" checked /> Shopify</label>
+            <label><input type="checkbox" name="tools" value="WooCommerce" /> WooCommerce</label>
+            <label><input type="checkbox" name="tools" value="Amazon" /> Amazon</label>
+            <label><input type="checkbox" name="tools" value="Salesforce" /> Salesforce</label>
+          </div>
+        </div>
+        <p class="error" id="formError" role="alert"></p>
+        <div class="modal-actions">
+          <button class="btn btn-primary" type="submit" id="submitBtn">Continue</button>
+          <button class="btn btn-ghost" type="button" id="closeModal">Cancel</button>
+        </div>
+      </form>
+      <div class="thanks" id="thanks">
+        <p id="resultSummary">Request received.</p>
+        <ul class="result-list" id="resultOps"></ul>
+        <div class="modal-actions">
+          <button class="btn btn-primary" type="button" id="downloadReport">Download blueprint PDF</button>
+          <button class="btn btn-ghost" type="button" id="closeThanks">Close</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <section id="privacy" hidden></section>
+  <section id="terms" hidden></section>
+
+  <script>
+    (function () {
+      const nav = document.getElementById("nav");
+      const menuBtn = document.getElementById("menuBtn");
+      menuBtn.addEventListener("click", function () {
+        const open = nav.classList.toggle("open");
+        menuBtn.setAttribute("aria-expanded", String(open));
+      });
+      document.querySelectorAll("#nav-links a, #nav-links button").forEach(function (el) {
+        el.addEventListener("click", function () {
+          nav.classList.remove("open");
+          menuBtn.setAttribute("aria-expanded", "false");
+        });
+      });
+
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      document.querySelectorAll(".check").forEach(function (el) {
+        if (reduce) {
+          el.classList.add("show");
+          return;
+        }
+        const delay = Number(el.getAttribute("data-delay") || 0);
+        setTimeout(function () { el.classList.add("show"); }, delay);
+      });
+
+      const orders = document.getElementById("orders");
+      const countries = document.getElementById("countries");
+      const ordersOut = document.getElementById("ordersOut");
+      const countriesOut = document.getElementById("countriesOut");
+      const legalOut = document.getElementById("legalOut");
+      const fineOut = document.getElementById("fineOut");
+
+      function fmt(n) { return n.toLocaleString("en-US"); }
+      function money(n) { return "$" + fmt(Math.round(n)); }
+      function setPct(el) {
+        const min = Number(el.min);
+        const max = Number(el.max);
+        const pct = ((Number(el.value) - min) / (max - min)) * 100;
+        el.style.setProperty("--pct", pct + "%");
+      }
+      function calc() {
+        const o = Number(orders.value);
+        const c = Number(countries.value);
+        ordersOut.textContent = o >= 50000 ? "50,000+" : fmt(o);
+        countriesOut.textContent = c >= 50 ? "50+" : String(c);
+        setPct(orders);
+        setPct(countries);
+        const legal = 8000 + o * 1 + c * 250;
+        const fines = 20000 + o * 4 + c * 1500;
+        legalOut.innerHTML = money(legal) + "<span>/yr</span>";
+        if (fines >= 50000) {
+          const shown = fines < 75000 ? 50000 : Math.floor(fines / 1000) * 1000;
+          fineOut.innerHTML = money(shown) + "<em>+</em>";
+        } else {
+          fineOut.innerHTML = money(fines);
+        }
+      }
+      orders.addEventListener("input", calc);
+      countries.addEventListener("input", calc);
+      calc();
+
+      const API_URL = window.STACKSPACE_API_URL || "http://localhost:8000/api/audit";
+      const modal = document.getElementById("modal");
+      const title = document.getElementById("modalTitle");
+      const copy = document.getElementById("modalCopy");
+      const form = document.getElementById("leadForm");
+      const thanks = document.getElementById("thanks");
+      const submitBtn = document.getElementById("submitBtn");
+      const formError = document.getElementById("formError");
+      const resultSummary = document.getElementById("resultSummary");
+      const resultOps = document.getElementById("resultOps");
+      const downloadReport = document.getElementById("downloadReport");
+      let mode = "audit";
+      let lastPayload = null;
+
+      function openModal(kind) {
+        mode = kind;
+        form.classList.remove("hide");
+        thanks.classList.remove("show");
+        formError.classList.remove("show");
+        form.reset();
+        form.querySelector('input[value="Shopify"]').checked = true;
+        if (kind === "demo") {
+          title.textContent = "Book a 15-Min Demo";
+          copy.textContent = "See a live scan across EU, US, and UK trade regions with your catalog.";
+          submitBtn.textContent = "Request demo";
+        } else {
+          title.textContent = "Run a free store audit";
+          copy.textContent = "We’ll map packaging, shipping lanes, and ESG claims against EU, US, and UK rules.";
+          submitBtn.textContent = "Start audit";
+        }
+        if (typeof modal.showModal === "function") modal.showModal();
+      }
+      document.querySelectorAll("[data-open]").forEach(function (btn) {
+        btn.addEventListener("click", function () { openModal(btn.getAttribute("data-open")); });
+      });
+      document.getElementById("closeModal").addEventListener("click", function () { modal.close(); });
+      document.getElementById("closeThanks").addEventListener("click", function () { modal.close(); });
+      downloadReport.addEventListener("click", async function () {
+        if (!lastPayload) return;
+        downloadReport.disabled = true;
+        try {
+          const res = await fetch(API_URL + "/report", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(lastPayload)
+          });
+          if (res.status === 402) {
+            window.location.href = "login.html";
+            return;
+          }
+          if (!res.ok) throw new Error("report failed");
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "audit_report.pdf";
+          a.click();
+          URL.revokeObjectURL(url);
+        } catch (err) {
+          formError.textContent = "Could not download the blueprint. Confirm the API is running.";
+          formError.classList.add("show");
+        } finally {
+          downloadReport.disabled = false;
+        }
+      });
+      form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        formError.classList.remove("show");
+        const tools = Array.from(form.querySelectorAll('input[name="tools"]:checked')).map(function (el) { return el.value; });
+        if (!tools.length) {
+          formError.textContent = "Select at least one commerce tool.";
+          formError.classList.add("show");
+          return;
+        }
+        const payload = {
+          company: form.company.value.trim(),
+          email: form.email.value.trim(),
+          team_size: form.team_size.value,
+          tools: mode === "demo" ? tools.concat(["demo-request"]) : tools
+        };
+        lastPayload = payload;
+        submitBtn.disabled = true;
+        try {
+          const res = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) throw new Error("The API could not save this audit yet.");
+          const data = await res.json();
+          resultSummary.textContent = data.summary || "Audit stored.";
+          resultOps.innerHTML = "";
+          (data.opportunities || []).forEach(function (item) {
+            const li = document.createElement("li");
+            li.textContent = item;
+            resultOps.appendChild(li);
+          });
+          form.classList.add("hide");
+          thanks.classList.add("show");
+        } catch (err) {
+          formError.textContent = "Could not reach the StackSpace API at localhost:8000. Start the FastAPI server, then try again.";
+          formError.classList.add("show");
+        } finally {
+          submitBtn.disabled = false;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
